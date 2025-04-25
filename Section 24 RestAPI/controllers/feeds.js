@@ -36,19 +36,25 @@ exports.getPostById = (req, res, next) => {
 exports.createPosts = (req, res, next) => {
   const error = validationResult(req);
   if (!error.isEmpty()) {
-    console.log("Error Encountered");
+    console.log("Error Encountered: ", error);
     const error = new Error("Validation failed");
     error.statusCode = 422;
     throw error;
-    // return res.status(422).json({ message: "Validation Failed", error: error });
   }
+//   if(!req.file) {
+//     console.log("No file uploaded");
+//     imageUrl = "Not Uploaded"
+//   } else {
+//     imageUrl = req.file.path;
+//   }
   const title = req.body.title;
   const content = req.body.content;
+  const imageUrl = "Not Uploaded"
   // create post in DB
   const post = new Post({
     title: title,
     content: content,
-    imageUrl: "dummyUrl",
+    imageUrl: imageUrl,
     creator: { name: "Rajan" },
   });
 
