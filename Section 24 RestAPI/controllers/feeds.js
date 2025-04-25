@@ -2,15 +2,27 @@ const { validationResult } = require("express-validator");
 const Post = require("../models/post");
 
 exports.getPosts = (req, res, next) => {
+  const pageNumber = req.query.pageNumber || 1;
+  const pageSize = req.query.pageSize || 2;
+  let totalItems;
   Post.find()
-    .then(posts => {
-        res.status(200).json({message: "Success", posts: posts})
+    .countDocuments()
+    .then((count) => {
+      totalItems = count;
+      return Post.find()
+        .skip((pageNumber - 1) * pageSize)
+        .limit(pageSize);
     })
-    .catch((error) => {
-      if (!error.statusCode) {
-        error.statusCode = 500;
+    .then((posts) => {
+      res
+        .status(200)
+        .json({ message: "Success", posts: posts, totalItems: totalItems, pageNumber: pageNumber, pageSize: pageSize });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
       }
-      next(error);
+      next(err);
     });
 };
 
@@ -41,15 +53,15 @@ exports.createPosts = (req, res, next) => {
     error.statusCode = 422;
     throw error;
   }
-//   if(!req.file) {
-//     console.log("No file uploaded");
-//     imageUrl = "Not Uploaded"
-//   } else {
-//     imageUrl = req.file.path;
-//   }
+  //   if(!req.file) {
+  //     console.log("No file uploaded");
+  //     imageUrl = "Not Uploaded"
+  //   } else {
+  //     imageUrl = req.file.path;
+  //   }
   const title = req.body.title;
   const content = req.body.content;
-  const imageUrl = "Not Uploaded"
+  const imageUrl = "Not Uploaded";
   // create post in DB
   const post = new Post({
     title: title,
@@ -61,7 +73,6 @@ exports.createPosts = (req, res, next) => {
   post
     .save()
     .then((result) => {
-      console.log("Saved successfully: ", result);
       res.status(201).json({
         message: "Post Created successfully",
         post: result,
@@ -73,5 +84,58 @@ exports.createPosts = (req, res, next) => {
         error.statusCode = 500;
       }
       next(error);
+    });
+};
+
+exports.updatePost = (req, res, next) => {
+  const error = validationResult(req);
+  if (!error.isEmpty()) {
+    const error = new Error("Validation failed");
+    error.statusCode = 422;
+    throw error;
+  }
+  const postId = req.params.postId;
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("Post Not Found");
+        error.statusCode = 404;
+        throw error;
+      }
+      post.title = req.body.title;
+      post.content = req.body.content;
+      return post.save();
+    })
+    .then((result) => {
+      res.status(200).json({ message: "Post Updated", post: result });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
+    });
+};
+
+exports.deleteById = (req, res, next) => {
+  const postId = req.params.postId;
+  Post.findById(postId)
+    .then((post) => {
+      if (!post) {
+        const error = new Error("Post Not Found");
+        error.status = 404;
+        throw error;
+      }
+      // Check if the post was created by the loggedin User
+      return Post.findByIdAndDelete(postId);
+    })
+    .then((result) => {
+      res.status(200).json({ message: "Deleted", result: result });
+    })
+    .catch((err) => {
+      if (!err.statusCode) {
+        err.statusCode = 500;
+      }
+      next(err);
     });
 };
