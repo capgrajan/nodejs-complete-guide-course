@@ -1,8 +1,8 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const mongoose = require("mongoose");
-const multer = require("multer");
-const path = require("path");
+const multer = require("multer"); // this is for file upload
+const path = require("path"); // this is to access local system files
 
 const feedRoutes = require("./routes/feeds");
 const authRoutes = require("./routes/auth");
@@ -41,7 +41,7 @@ app.use(bodyParser.json());
 
 // If we have images in local directory that we need to expose we can use this logic.
 // If we dont use this the path will not be exposed to public.
-app.use("/images", express.static(path.join(__dirname, "images")));
+// app.use("/images", express.static(path.join(__dirname, "images")));
 
 // This is to remove CORS from frontend.
 // app.use((req, res, next) => {
