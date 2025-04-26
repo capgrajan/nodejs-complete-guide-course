@@ -1,5 +1,6 @@
 const { validationResult } = require("express-validator");
 const Post = require("../models/post");
+const User = require("../models/user");
 
 exports.getPosts = (req, res, next) => {
   const pageNumber = req.query.pageNumber || 1;
@@ -62,20 +63,28 @@ exports.createPosts = (req, res, next) => {
   const title = req.body.title;
   const content = req.body.content;
   const imageUrl = "Not Uploaded";
+  let creator;
   // create post in DB
   const post = new Post({
     title: title,
     content: content,
     imageUrl: imageUrl,
-    creator: { name: "Rajan" },
+    creator: req.userId,
   });
 
   post
     .save()
     .then((result) => {
+      return User.findById(req.userId)
+    }).then( user => {
+      creator = user;
+      user.posts.push(post);
+      return user.save();
+    }).then( result => {
       res.status(201).json({
         message: "Post Created successfully",
-        post: result,
+        post: post,
+        creator: {id: creator._id, name: creator.name}
       });
     })
     .catch((error) => {
@@ -102,6 +111,11 @@ exports.updatePost = (req, res, next) => {
         error.statusCode = 404;
         throw error;
       }
+      if(post.creator.toString() !== req.userId) {
+        const error = new Error("User not authorized!");
+        error.statusCode = 403;
+        throw error;
+      }
       post.title = req.body.title;
       post.content = req.body.content;
       return post.save();
@@ -123,7 +137,12 @@ exports.deleteById = (req, res, next) => {
     .then((post) => {
       if (!post) {
         const error = new Error("Post Not Found");
-        error.status = 404;
+        error.statusCode = 404;
+        throw error;
+      }
+      if(post.creator.toString() !== req.userId) {
+        const error = new Error("User not authorized to delete this post!");
+        error.statusCode = 403;
         throw error;
       }
       // Check if the post was created by the loggedin User

@@ -6,6 +6,7 @@ const path = require("path"); // this is to access local system files
 
 const feedRoutes = require("./routes/feeds");
 const authRoutes = require("./routes/auth");
+const isAuth = require("./middleware/is-auth");
 
 const app = express();
 
@@ -51,7 +52,7 @@ app.use(bodyParser.json());
 // });
 
 // Here we define the routes
-app.use("/feed", feedRoutes);
+app.use("/feed", isAuth, feedRoutes);
 app.use("/auth", authRoutes);
 
 // This is for global error handeling
